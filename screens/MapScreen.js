@@ -11,42 +11,55 @@ import { useDispatch, useSelector } from "react-redux";
 import { addPlace, importPlaces } from "../reducers/user";
 import MapView, { Marker } from "react-native-maps";
 import * as Location from "expo-location";
+// Importation de l'adresse IP du mobile depuis le fichier .env
+import { API_URL } from "@env";
 
 export default function MapScreen() {
   const dispatch = useDispatch();
   const user = useSelector((state) => state.user.value);
 
-  const [currentPosition, setCurrentPosition] = useState(null);
-  const [tempCoordinates, setTempCoordinates] = useState(null);
+  const [currentPosition, setCurrentPosition] = useState(null); // Coordonnées de la position de l'utilisateur
+  const [tempCoordinates, setTempCoordinates] = useState(null); // Coordonnées d'un nouvel emplacement créé directement depuis la carte
   const [modalVisible, setModalVisible] = useState(false);
   const [newPlace, setNewPlace] = useState("");
   const [userMarker, setUserMarker] = useState([]);
 
+  // Récupération de la position de l'utilisateur et de tous ses lieux associés
   useEffect(() => {
     (async () => {
+      // Demande d'autorisation pour accéder à la localisation
       const result = await Location.requestForegroundPermissionsAsync();
       const status = result?.status;
 
       if (status === "granted") {
+        // Récupère la position de l'utilisateur en temps réel avec une intervalle de mise à jour de 10 mètres
         Location.watchPositionAsync({ distanceInterval: 10 }, (location) => {
+          // Met à jour les coordonnées de la position actuelle
           setCurrentPosition(location.coords);
         });
       }
     })();
-    fetch(`https://locapicbackend-sand.vercel.app/places/${user.nickname}`)
+
+    // Récupération des lieux de l'utilisateur depuis le backend
+    fetch(`${API_URL}/places/${user.nickname}`)
       .then((response) => response.json())
       .then((data) => {
-        console.log("GET NICKNAME 🙈🙈", data);
+        // Enregistre les lieux de l'utilisateur dans le store Redux
         data.result && dispatch(importPlaces(data.places));
       });
   }, []);
 
+  // Fonction pour ouvrir une modale et ajouter le lieu touché sur la carte
   const handleLongPress = (e) => {
+    // Enregistre les coordonnées de l'emplacement sélectionné sur la carte
     setTempCoordinates(e.nativeEvent.coordinate);
+    // Ouvre une modale pour ajouter un lieu
     setModalVisible(true);
   };
 
+  // Fonction pour ajouter le lieu sélectionné sur la carte
   const handleNewPlace = () => {
+    // Enregistre le nouveau lieu dans le store Redux
     dispatch(
       addPlace({
         name: newPlace,
@@ -54,7 +67,9 @@ export default function MapScreen() {
         longitude: tempCoordinates.longitude,
       })
     );
-    fetch("https://locapicbackend-sand.vercel.app/places", {
+
+    // Ajoute le nouveau lieu dans la base de données depuis le backend
+    fetch(`${API_URL}/places`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({
@@ -66,17 +81,19 @@ export default function MapScreen() {
     })
       .then((response) => response.json())
       .then((data) => console.log("FETCH POST⭐⭐", data)),
+      // Réinitilise le champ de saisie de la modale et ferme la modale
       setModalVisible(false);
     setNewPlace("");
   };
 
+  // Fonction pour fermer la modale
   const handleClose = () => {
     setModalVisible(false);
+    // Réinitilise le champ de saisie de la modale
     setNewPlace("");
   };
 
-  console.log("USERMARKER 🤩🤩", userMarker);
-
+  // Création des marqueurs pour chaque lieu enregistré dans la liste de l'utilisateur
   const markers = user.places.map((data, i) => {
     return (
       <Marker
@@ -89,6 +106,7 @@ export default function MapScreen() {
 
   return (
     <View style={styles.container}>
+      {/* PARTIE MODALE QUAND ELLE EST AFFICHEE */}
       <Modal visible={modalVisible} animationType="fade" transparent>
         <View style={styles.centeredView}>
           <View style={styles.modalView}>
@@ -115,6 +133,7 @@ export default function MapScreen() {
           </View>
         </View>
       </Modal>
+      {/* FIN PARTIE MODALE */}
 
       <MapView
         onLongPress={(e) => handleLongPress(e)}

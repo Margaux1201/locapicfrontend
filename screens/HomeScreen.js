@@ -16,13 +16,17 @@ export default function HomeScreen({ navigation }) {
 
   const [nickname, setNickname] = useState("");
 
+  // Fonction pour enregistrer le pseudo et naviguer vers l'écran de la carte
   const handleSubmit = () => {
     dispatch(updateNickname(nickname));
     navigation.navigate("TabNavigator");
   };
 
   return (
-    <KeyboardAvoidingView style={styles.container} behavior={"padding"}>
+    <KeyboardAvoidingView
+      style={styles.container}
+      behavior={Platform.OS === "ios" ? "padding" : "height"}
+    >
       <Image
         style={styles.image}
         source={require("../assets/home-image.jpg")}
