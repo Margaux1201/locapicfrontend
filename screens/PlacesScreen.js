@@ -11,29 +11,36 @@ import {
 import FontAwesome from "react-native-vector-icons/FontAwesome";
 import { useDispatch, useSelector } from "react-redux";
 import { addPlace, removePlace } from "../reducers/user";
+// Importation de l'adresse IP du mobile depuis le fichier .env
+import { API_URL } from "@env";
 
 export default function PlacesScreen() {
   const dispatch = useDispatch();
   const user = useSelector((state) => state.user.value);
 
-  const [city, setCity] = useState("");
+  const [city, setCity] = useState(""); // Champ de saisie pour ajouter une nouvelle ville
 
+  // Fonction pour créer une nouvelle ville dans la liste de l'utilisateur
   const handleSubmit = () => {
+    // Vérifie si le champ de saisie n'est pas vide avant de faire une requête
     if (city.length === 0) {
       return;
     }
 
+    // Requête pour récupérer les coordonnées de la ville saisie
     fetch(`https://api-adresse.data.gouv.fr/search/?q=${city}`)
       .then((response) => response.json())
       .then((data) => {
         const firstCity = data.features[0];
+        // Création d'une nouvelle ville avec les coordonnées récupérées
         const newPlace = {
           name: firstCity.properties.city,
           latitude: firstCity.geometry.coordinates[1],
           longitude: firstCity.geometry.coordinates[0],
         };
 
-        fetch("https://locapicbackend-sand.vercel.app/places", {
+        // Ajoute la nouvelle ville dans le store Redux et dans la base de données, en lien avec l'utilisateur
+        fetch(`${API_URL}/places`, {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({
@@ -46,15 +53,18 @@ export default function PlacesScreen() {
           .then((response) => response.json())
           .then((data) => {
             if (data.result) {
+              // Si la requête est réussie, ajoute le lieu dans le store Redux
               dispatch(addPlace(newPlace));
+              // Réinitialise le champ de saisie
               setCity("");
             }
           });
       });
   };
 
+  // Fonction pour supprimer un lieu de la liste de l'utilisateur
   const handleDelete = (placeName) => {
-    fetch("https://locapicbackend-sand.vercel.app/places", {
+    fetch(`${API_URL}/places`, {
       method: "DELETE",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({
@@ -65,21 +75,28 @@ export default function PlacesScreen() {
       .then((response) => response.json())
       .then((data) => {
         if (data.result) {
+          // Si la requête est réussie, supprime le lieu du store Redux
           dispatch(removePlace(placeName));
         }
       });
   };
 
+  // Affichage des lieux de l'utilisateur au chargement de l'écran
   const places = user.places.map((data, i) => {
     return (
       <View key={i} style={styles.card}>
         <View>
+          {/* NOM DE LA VILLE */}
           <Text style={styles.name}>{data.name}</Text>
+
+          {/* COORDONNÉES DE LA VILLE */}
           <Text>
             LAT : {Number(data.latitude).toFixed(3)} LON :{" "}
             {Number(data.longitude).toFixed(3)}
           </Text>
         </View>
+
+        {/* ICÔNE POUR SUPPRIMER LA VILLE */}
         <FontAwesome
           name="trash-o"
           onPress={() => handleDelete(data.name)}
@@ -111,6 +128,7 @@ export default function PlacesScreen() {
       </View>
 
       <ScrollView contentContainerStyle={styles.scrollView}>
+        {/* LISTE DES VILLES DE L'UTILISATEUR */}
         {places}
       </ScrollView>
     </SafeAreaView>

@@ -22,7 +22,6 @@ export default function MapScreen() {
   const [tempCoordinates, setTempCoordinates] = useState(null); // Coordonnées d'un nouvel emplacement créé directement depuis la carte
   const [modalVisible, setModalVisible] = useState(false);
   const [newPlace, setNewPlace] = useState("");
-  const [userMarker, setUserMarker] = useState([]);
 
   // Récupération de la position de l'utilisateur et de tous ses lieux associés
   useEffect(() => {
@@ -140,6 +139,7 @@ export default function MapScreen() {
         mapType="hybrid"
         style={styles.map}
       >
+        {/* MARQUEUR DE LA POSITION DE L'UTILISATEUR SI LOCALISATION AUTORISEE */}
         {currentPosition && (
           <Marker
             coordinate={currentPosition}
@@ -147,6 +147,7 @@ export default function MapScreen() {
             pinColor="#fecb2d"
           />
         )}
+        {/* TOUS LES AUTRES MARQUEURS */}
         {markers}
       </MapView>
     </View>
